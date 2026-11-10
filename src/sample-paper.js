@@ -80,7 +80,7 @@ window.RD = window.RD || {};
       const pn = n++; objs[pn] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << ${fdict} >> >> /Contents ${cn} 0 R >>`; kids.push(pn);
     }
     objs[2] = `<< /Type /Pages /Kids [${kids.map(k => k + ' 0 R').join(' ')}] /Count ${kids.length} >>`;
-    const info = n++; objs[info] = `<< /Title (${pdfEsc('Practice paper: ' + TITLE)}) /Producer (ARR Review Desk) >>`;
+    const info = n++; objs[info] = `<< /Title (${pdfEsc('Practice paper: ' + TITLE)}) /Producer (Review Desk) >>`;
     let out = '%PDF-1.4\n'; const offs = [];
     for (let i = 1; i < n; i++) { offs[i] = out.length; out += `${i} 0 obj\n${objs[i]}\nendobj\n`; }
     const xref = out.length;

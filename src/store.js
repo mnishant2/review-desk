@@ -8,7 +8,7 @@
 window.RD = window.RD || {};
 (() => {
   'use strict';
-  const NAME = 'arr-review-desk';
+  const NAME = 'arr-review-desk'; // internal name from the first release; kept so saved data stays readable
   const VERSION = 1;
   const STORES = ['papers', 'highlights', 'chats', 'pdfs'];
   let db = null;

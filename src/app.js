@@ -1,4 +1,4 @@
-/* ARR Review Desk: the reader, marks, assistant, research, review form and settings. */
+/* Review Desk: the reader, marks, assistant, research, review form and settings. */
 (() => {
   'use strict';
   const U = RD.util;
@@ -6,7 +6,9 @@
   const { CATS, CAT, GROUP_TITLES, FORMS, STATUS, STATUS_L, STARTERS, PROMPTS, SHORTCUTS } = RD.config;
   const store = RD.store, ai = RD.ai, research = RD.research, settings = RD.settings;
 
-  const BACKUP_FORMAT = 'arr-review-desk-backup';
+  const BACKUP_FORMAT = 'review-desk-backup';
+  const BACKUP_FORMATS = [BACKUP_FORMAT, 'arr-review-desk-backup']; // the second is from before the rename
+  const REPO_URL = 'https://github.com/mnishant2/review-desk';
   const narrow = () => matchMedia('(max-width: 859px)').matches;
   const midWidth = () => matchMedia('(max-width: 1199px)').matches;
   const fmtScore = v => (v == null || v === '' ? '' : (Number(v) % 1 ? Number(v).toFixed(1) : String(Number(v))));
@@ -29,7 +31,7 @@
   let inflight = 0, saveErr = false;
   const TAB = uid();
   let chan = null;
-  try { chan = new BroadcastChannel('arr-review-desk'); chan.onmessage = e => onRemote(e.data); } catch {}
+  try { chan = new BroadcastChannel('arr-review-desk'); /* internal name, unchanged by the rename */ chan.onmessage = e => onRemote(e.data); } catch {}
   const bc = msg => { try { if (chan) chan.postMessage({ ...msg, from: TAB }); } catch {} };
 
   function schedule(key, delay, fn) {
@@ -1058,13 +1060,14 @@
     if (searchCtl) searchCtl.abort(); searchCtl = new AbortController();
     out.replaceChildren(h('p', { class: 'muted' }, `Searching ${research.SOURCES[source]}…`));
     const go = $('#rgo'); if (go) go.disabled = true;
-    try { renderResults(await research.search(source, query, { signal: searchCtl.signal })); }
+    try { renderResults(await research.search(source, query, { signal: searchCtl.signal }), source); }
     catch (e) { const m = research.message(e, source); if (m) out.replaceChildren(h('p', { class: 'err' }, m)); }
     finally { const g = $('#rgo'); if (g) g.disabled = false; }
   }
-  function renderResults(papers) {
+  function renderResults(papers, source) {
     const out = $('#results'); if (!out) return; out.replaceChildren();
     if (!papers.length) out.append(h('p', { class: 'muted' }, 'No papers found. Try broader terms.'));
+    else out.append(h('p', { class: 'sm muted' }, 'Results from ', h('a', { href: research.SOURCE_URLS[source], target: '_blank', rel: 'noopener noreferrer' }, research.SOURCES[source]), '.'));
     for (const r of papers) {
       const url = /^https?:\/\//.test(r.url || '') ? r.url : null;
       const abs = r.abstract ? h('p', { class: 'abs' }, r.abstract) : null;
@@ -1306,7 +1309,10 @@
         setRow('Search source', selectEl('setSrc', Object.entries(research.SOURCES), st.researchSource, v => { settings.set({ researchSource: v }); const r = $('#rsrc'); if (r) r.value = v; }), 'Both are free and need no account. Only the words you search for are sent.', 'setSrc')),
       h('section', { class: 'set-sec', id: 'set-form' }, h('h3', null, 'Review form'),
         setRow('Default form', selectEl('setForm', Object.values(FORMS).map(f => [f.id, f.name]), st.defaultForm, v => settings.set({ defaultForm: v })), 'Used for papers you add from now on. Change the form of any paper from its Review tab. To add a venue’s form, see the README.', 'setForm')),
-      h('section', { class: 'set-sec', id: 'set-data' }, h('h3', null, 'Your data'), dataSettings()));
+      h('section', { class: 'set-sec', id: 'set-data' }, h('h3', null, 'Your data'), dataSettings()),
+      h('section', { class: 'set-sec', id: 'set-about' }, h('h3', null, 'About'),
+        h('p', { class: 'sm' }, 'Review Desk is free, open-source software under the MIT license. ', h('a', { href: REPO_URL, target: '_blank', rel: 'noopener noreferrer' }, 'Source code, issues and suggestions on GitHub'), '.'),
+        h('p', { class: 'sm muted' }, 'An independent project, not affiliated with or endorsed by the Association for Computational Linguistics or ACL Rolling Review. Search results come from OpenAlex and Semantic Scholar. PDFs are displayed with pdf.js.')));
   }
   function aiSettings() {
     const st = settings.get().ai; const k = settings.keys();
@@ -1394,7 +1400,7 @@
   async function exportBackup(includePdfs) {
     flushAll();
     const data = {
-      format: BACKUP_FORMAT, version: 1, exportedAt: new Date().toISOString(), app: 'ARR Review Desk',
+      format: BACKUP_FORMAT, version: 1, exportedAt: new Date().toISOString(), app: 'Review Desk',
       papers: Object.values(S.papers).map(clone),
       highlights: Object.values(S.hls).flatMap(m => Object.values(m)).map(clone),
       chats: Object.entries(S.chats).map(([paperId, turns]) => ({ paperId, turns: (turns || []).filter(t => t.content && !t.pending && !t.transient).map(t => ({ role: t.role, content: t.content, at: t.at || 0 })) })).filter(c => c.turns.length),
@@ -1403,7 +1409,7 @@
     if (includePdfs) {
       for (const p of data.papers) { if (p.sample) continue; const b = await getPdfBytes(p.id); if (b) data.pdfs[p.id] = b64FromBytes(b); }
     }
-    downloadFile(`arr-review-desk-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data), 'application/json');
+    downloadFile(`review-desk-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data), 'application/json');
     LS.set('lastBackup', Date.now()); renderLibrary();
     toast(`Backup downloaded: ${data.papers.length} paper${data.papers.length === 1 ? '' : 's'}${includePdfs ? ' with their PDFs' : ' (without PDFs)'}.`);
     if (dlg.open) buildSettings();
@@ -1412,7 +1418,7 @@
     if (!file) return;
     let data;
     try { data = JSON.parse(await file.text()); } catch { toast('That file isn’t a valid backup.'); return; }
-    if (!data || data.format !== BACKUP_FORMAT || !Array.isArray(data.papers)) { toast('That file isn’t an ARR Review Desk backup.'); return; }
+    if (!data || !BACKUP_FORMATS.includes(data.format) || !Array.isArray(data.papers)) { toast('That file isn’t a Review Desk backup.'); return; }
     if (!S.storageOk) { toast('This browser is blocking storage, so a backup can’t be restored here.'); return; }
     flushAll();
     try {

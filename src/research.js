@@ -7,6 +7,8 @@ window.RD = window.RD || {};
   'use strict';
 
   const SOURCES = { openalex: 'OpenAlex', s2: 'Semantic Scholar' };
+  /* Shown under results. The Semantic Scholar API licence asks for attribution. */
+  const SOURCE_URLS = { openalex: 'https://openalex.org/', s2: 'https://www.semanticscholar.org/' };
 
   const stripTags = s => String(s || '').replace(/<[^>]+>/g, '');
   function authorsStr(list) {
@@ -79,5 +81,5 @@ window.RD = window.RD || {};
     ];
   }
 
-  RD.research = { SOURCES, search, message, links };
+  RD.research = { SOURCES, SOURCE_URLS, search, message, links };
 })();

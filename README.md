@@ -1,10 +1,12 @@
-# ARR Review Desk
+# Review Desk
+
+*A reading and reviewing desk for ACL Rolling Review and other venues.*
 
 Read, mark and review conference submissions in your browser. Each kind of highlight feeds one field of the [ACL Rolling Review](https://aclrollingreview.org/) reviewer form, so your review is half-written by the time you finish reading. An AI assistant is optional and can run entirely on your own computer.
 
 Everything stays in your browser. There is no server, no account and no tracking.
 
-**Use it online:** https://mnishant2.github.io/arr-review-desk/ · **Or run it locally** (see [Run it yourself](#run-it-yourself))
+**Use it online:** https://mnishant2.github.io/review-desk/ · **Or run it locally** (see [Run it yourself](#run-it-yourself))
 
 ![Marking a submission: highlights by kind on the page, notes in the side panel](docs/screenshot-light.png)
 
@@ -102,8 +104,8 @@ In Settings, choose **OpenAI-compatible server**, keep the URL `http://localhost
 There is no build step. Download or clone the repository, then open `index.html` in your browser. For the most reliable experience, serve the folder:
 
 ```bash
-git clone https://github.com/mnishant2/arr-review-desk.git
-cd arr-review-desk
+git clone https://github.com/mnishant2/review-desk.git
+cd review-desk
 python3 -m http.server 8000
 # open http://localhost:8000
 ```
@@ -163,4 +165,6 @@ MIT. See [LICENSE](LICENSE). Bundled third-party code keeps its own license:
 - pdf.js: Apache 2.0, in `vendor/pdfjs/LICENSE`
 - IBM Plex and Source Serif 4: SIL Open Font License 1.1, in `vendor/fonts/`
 
-ARR Review Desk is an independent project. It is not affiliated with or endorsed by the Association for Computational Linguistics or ACL Rolling Review.
+Search results come from [OpenAlex](https://openalex.org/) and [Semantic Scholar](https://www.semanticscholar.org/), and each result list credits its source.
+
+Review Desk is an independent project. It is not affiliated with or endorsed by the Association for Computational Linguistics or ACL Rolling Review. "ACL Rolling Review" and "ARR" are used only to describe the review form the tool supports.
