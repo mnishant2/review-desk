@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ARR Review Desk</title>
+<meta name="description" content="Read, mark and review conference submissions in your browser. Highlights feed the ACL Rolling Review form, with an optional AI assistant. Everything stays on your machine.">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<script>
+  /* Apply the saved theme before first paint. */
+  try {
+    var s = JSON.parse(localStorage.getItem('ard:settings') || '{}');
+    if (s.theme === 'light' || s.theme === 'dark') document.documentElement.dataset.theme = s.theme;
+    if (s.pageLook && s.pageLook !== 'auto') document.documentElement.dataset.pages = s.pageLook;
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="4" y="2.5" width="14" height="17" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="6.5" y="7" width="9" height="3" rx="1" fill="var(--c-presentation)" opacity=".7"/><path d="M7 13h8M7 15.5h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span>ARR Review Desk</span>
+    </div>
+    <button class="btn ghost icon libtoggle" id="libToggle" aria-label="Show papers" aria-expanded="false"></button>
+    <div class="docbar"><div class="doctitle" id="docTitle"></div><div class="pageind" id="pageInd"></div></div>
+    <div class="zoom" id="zoomCtl" hidden>
+      <button id="zoomOut" aria-label="Zoom out">−</button><button id="zoomFit" class="zoomval" title="Fit to width">100%</button><button id="zoomIn" aria-label="Zoom in">+</button>
+    </div>
+    <div class="tools">
+      <button class="btn ghost icon" id="findBtn" aria-label="Find in paper" title="Find in paper (Ctrl+F)" disabled></button>
+      <button class="btn ghost icon" id="fsBtn" aria-label="Full screen" title="Full screen" hidden></button>
+      <button class="btn ghost icon" id="themeBtn" aria-label="Theme"></button>
+      <button class="btn ghost icon" id="keysBtn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)"></button>
+      <button class="btn ghost icon" id="settingsBtn" aria-label="Settings" title="Settings"></button>
+    </div>
+    <div class="savestate" id="saveState" aria-live="polite"></div>
+    <nav class="viewswitch" id="viewSwitch" aria-label="View">
+      <button data-view="library">Papers</button><button data-view="reader" aria-pressed="true">Paper</button><button data-view="panel">Notes &amp; review</button>
+    </nav>
+  </header>
+
+  <div class="shell" id="shell" data-view="reader">
+    <aside class="library" id="library" aria-label="Papers">
+      <div class="lib-head"><h2>Papers</h2><button class="btn sm primary" id="addBtn">Add PDFs</button></div>
+      <div class="lib-list" id="libList"></div>
+      <div class="lib-foot" id="libFoot"></div>
+    </aside>
+
+    <main class="reader" id="reader">
+      <div id="viewer" class="viewer" tabindex="-1"><div id="pages" class="pages"></div></div>
+      <div class="findbar" id="findBar" role="search" hidden>
+        <input id="findIn" type="search" placeholder="Find in paper" aria-label="Find in paper" autocomplete="off">
+        <span class="pageind" id="findCount" aria-live="polite"></span>
+        <button class="btn ghost icon sm" id="findPrev" aria-label="Previous match"></button>
+        <button class="btn ghost icon sm" id="findNext" aria-label="Next match"></button>
+        <button class="btn ghost icon sm" id="findClose" aria-label="Close find"></button>
+      </div>
+      <div id="vstate" class="overlay-state vstate" hidden></div>
+      <div id="welcome" class="overlay-state welcome">
+        <div class="welcome-inner">
+          <div>
+            <p class="eyebrow">For ACL Rolling Review and other venues</p>
+            <h1>Read each submission once, mark it as you go, and let the marks build your review.</h1>
+          </div>
+          <div class="drop">
+            <p><strong>Drop the PDFs you were assigned here</strong>, or add them from your computer. Each paper keeps its own marks, notes, assistant chat and review draft. Everything is saved in this browser as you work; nothing is uploaded.</p>
+            <div class="row wrap">
+              <button class="btn primary" data-act="add">Add PDFs</button>
+              <button class="btn" data-act="practice">Open the practice paper</button>
+              <button class="btn ghost" data-act="import">Restore a backup</button>
+            </div>
+          </div>
+          <section>
+            <h2>Mark with the review form in mind</h2>
+            <p class="muted" style="margin-bottom:12px">Select text in the paper, then press a number. Each kind of mark feeds one field of the review form, so the review is half-written by the time you finish reading.</p>
+            <div class="tablewrap"><table class="mapping"><thead><tr><th>Key</th><th>Mark</th><th>Feeds</th><th>Use it for</th></tr></thead><tbody id="mapBody"></tbody></table></div>
+          </section>
+          <section class="steps">
+            <div><h3>1. Skim, then read</h3><p>Read the abstract, figures and conclusion first. On the second pass, mark claims, evidence and gaps, and add a one-line note to each mark while it is fresh.</p></div>
+            <div><h3>2. Test your reading</h3><p>Ask the assistant to check a claim against the experiments or argue for the paper against your weaknesses. Look up related work by method, never by the submission’s title.</p></div>
+            <div><h3>3. Write and check</h3><p>Insert your marks into the matching form fields, rewrite them in your own words, set the scores, then run a consistency check before copying each section into the review system.</p></div>
+          </section>
+          <p class="fine">Papers, marks and drafts are stored only in this browser, so back them up from Settings. The AI assistant is off until you set it up, and it can use a local model so the paper never leaves your computer. ARR’s reviewer guidelines don’t allow putting a submission or your review into a generative AI tool that isn’t privacy-preserving, or letting AI write your first draft; <a href="https://aclrollingreview.org/reviewerguidelines#q-can-i-use-generative-ai" target="_blank" rel="noopener noreferrer">read the guidance</a> and your venue’s rules before you turn the assistant on.</p>
+        </div>
+      </div>
+    </main>
+
+    <aside class="panel" id="panel" aria-label="Notes and review">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="notes" aria-selected="true" aria-controls="pane-notes">Marks<span class="count" id="markCount"></span></button>
+        <button class="tab" role="tab" data-tab="assistant" aria-selected="false" aria-controls="pane-assistant">Assistant</button>
+        <button class="tab" role="tab" data-tab="research" aria-selected="false" aria-controls="pane-research">Research</button>
+        <button class="tab" role="tab" data-tab="review" aria-selected="false" aria-controls="pane-review">Review</button>
+      </div>
+      <section class="pane" id="pane-notes" role="tabpanel"></section>
+      <section class="pane chat" id="pane-assistant" role="tabpanel" hidden></section>
+      <section class="pane" id="pane-research" role="tabpanel" hidden></section>
+      <section class="pane" id="pane-review" role="tabpanel" hidden></section>
+    </aside>
+  </div>
+</div>
+
+<dialog class="modal" id="settingsDlg" aria-labelledby="settingsTitle">
+  <div class="dlg-head"><h2 id="settingsTitle">Settings</h2><button class="btn ghost icon" data-close aria-label="Close settings"></button></div>
+  <div class="dlg-body" id="settingsBody"></div>
+</dialog>
+<dialog class="modal" id="keysDlg" aria-labelledby="keysTitle">
+  <div class="dlg-head"><h2 id="keysTitle">Keyboard shortcuts</h2><button class="btn ghost icon" data-close aria-label="Close shortcuts"></button></div>
+  <div class="dlg-body"><table class="keys" id="keysTable"></table></div>
+</dialog>
+
+<div class="pop" id="pop" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<div class="dropover" id="dropover" hidden><span>Drop PDFs to add them to your desk</span></div>
+<input type="file" id="fileIn" accept="application/pdf,.pdf" multiple hidden>
+<input type="file" id="reattachIn" accept="application/pdf,.pdf" hidden>
+<input type="file" id="importIn" accept="application/json,.json" hidden>
+
+<script src="vendor/pdfjs/pdf.min.js"></script>
+<script src="src/util.js"></script>
+<script src="src/config.js"></script>
+<script src="src/settings.js"></script>
+<script src="src/store.js"></script>
+<script src="src/ai.js"></script>
+<script src="src/research.js"></script>
+<script src="src/sample-paper.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
